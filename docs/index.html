@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Planet-B · Rocket Studios</title>
-<link rel="icon" href="assets/favicon.png">
+<link rel="icon" href="assets/favicon.png?v=3">
 <script>
 // Aplica el tema antes de pintar la página para evitar parpadeos.
 (function () {
@@ -15,7 +15,7 @@
   } catch (e) {}
 })();
 </script>
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
 
@@ -26,7 +26,7 @@
     <p class="sub">Acceso privado · Cotizador de builds</p>
     <form id="login-form" class="login-form">
       <label>Correo<input type="email" id="email" required autocomplete="username"></label>
-      <label>Contraseña<input type="password" id="pass" required autocomplete="current-password"></label>
+      <label>Contraseña<span class="pw"><input type="password" id="pass" required autocomplete="current-password"><button type="button" class="eye" id="eye" aria-label="Mostrar contraseña"></button></span></label>
       <button type="submit" class="btn-primary" id="go">Entrar</button>
       <p class="err" id="err"></p>
     </form>
@@ -98,9 +98,9 @@
     });
   }
   document.querySelectorAll(".controls").forEach(c => {
-    c.innerHTML = PALETTES.map(p =>
-      `<button class="dot" data-t="${p.id}" title="${p.name}" aria-label="Color ${p.name}"></button>`
-    ).join("") + '<button class="mode-btn" type="button"></button>';
+    c.innerHTML = '<div class="themes">' + PALETTES.map(p =>
+      `<button class="dot" type="button" data-t="${p.id}" title="${p.name}" aria-label="Color ${p.name}"></button>`
+    ).join("") + '<span class="sep"></span><button class="mode-btn" type="button"></button></div>';
   });
   document.addEventListener("click", e => {
     const dot = e.target.closest(".dot");
@@ -111,6 +111,31 @@
     }
   });
   applyTheme();
+
+
+  // ----- Detalles de interfaz -----
+  const EYE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const EYE_OFF = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.2M6.6 6.6A16 16 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 4.4-1"/></svg>';
+  $("eye").innerHTML = EYE;
+  $("eye").onclick = () => {
+    const show = $("pass").type === "password";
+    $("pass").type = show ? "text" : "password";
+    $("eye").innerHTML = show ? EYE_OFF : EYE;
+  };
+  const lines = $("lines"); let seen = 0;
+  new MutationObserver(() => {
+    const cards = lines.querySelectorAll(".card");
+    cards.forEach((c, i) => {
+      if (seen === 0) { c.style.animationDelay = i * 70 + "ms"; c.classList.add("enter"); }
+      else if (i >= seen) c.classList.add("enter");
+    });
+    seen = cards.length;
+  }).observe(lines, { childList: true });
+  let lastTot = "";
+  new MutationObserver(() => {
+    const t = $("tot");
+    if (t.textContent !== lastTot) { lastTot = t.textContent; t.classList.remove("bump"); void t.offsetWidth; t.classList.add("bump"); }
+  }).observe($("tot"), { childList: true, characterData: true, subtree: true });
 
   // ----- Login -----
   // Identificador del usuario: SHA-256 del correo (igual que en las herramientas).
@@ -136,13 +161,15 @@
   $("login-form").addEventListener("submit", async e => {
     e.preventDefault();
     $("err").textContent = "";
-    $("go").disabled = true; $("go").textContent = "Entrando...";
+    $("go").disabled = true; $("go").classList.add("loading");
     let res;
     try {
       res = await unlock($("email").value.trim().toLowerCase(), $("pass").value);
     } catch {
       $("err").textContent = "Correo o contraseña incorrectos.";
-      $("go").disabled = false; $("go").textContent = "Entrar";
+      $("go").disabled = false; $("go").classList.remove("loading");
+      const card = document.querySelector(".login-card");
+      card.classList.remove("shake"); void card.offsetWidth; card.classList.add("shake");
       $("pass").value = "";
       return;
     }
