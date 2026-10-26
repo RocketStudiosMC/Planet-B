@@ -1,0 +1,7 @@
+# Clave maestra: si se sube, cualquiera puede descifrar los precios.
+tools/master.key
+# Lista local de correos y nombres: solo para ti.
+tools/roster.json
+# Código fuente de los precios: solo la versión cifrada se publica.
+src/
+node_modules/
